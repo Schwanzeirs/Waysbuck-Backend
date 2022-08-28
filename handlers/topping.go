@@ -5,10 +5,15 @@ import (
 	toppingdto "bewaysbuck/dto/topping"
 	"bewaysbuck/models"
 	"bewaysbuck/repositories"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
@@ -17,7 +22,7 @@ type handlerTopping struct {
 	ToppingRepository repositories.ToppingRepository
 }
 
-var pathfile = "http://localhost:5000/uploads/"
+// var pathfile = "http://localhost:5000/uploads/"
 
 func HandlerTopping(ToppingRepository repositories.ToppingRepository) *handlerTopping {
 	return &handlerTopping{ToppingRepository}
@@ -32,9 +37,9 @@ func (h *handlerTopping) FindToppings(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err.Error())
 	}
 
-	for i, p := range toppings {
-		toppings[i].Image = pathfile + p.Image
-	}
+	// for i, p := range toppings {
+	// 	toppings[i].Image = pathfile + p.Image
+	// }
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: toppings}
@@ -66,7 +71,7 @@ func (h *handlerTopping) CreateTopping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	dataContex := r.Context().Value("dataFile")
-	filename := dataContex.(string)
+	filepath := dataContex.(string)
 
 	price, _ := strconv.Atoi(r.FormValue("price"))
 	request := toppingdto.ToppingRequest{
@@ -83,10 +88,26 @@ func (h *handlerTopping) CreateTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Declare Context Background, Cloud Name, API Key, API Secret ...
+	var ctx = context.Background()
+	var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+	var API_KEY = os.Getenv("API_KEY")
+	var API_SECRET = os.Getenv("API_SECRET")
+
+	// Add your Cloudinary credentials ...
+	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+
+	// Upload file to Cloudinary ...
+	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "waysbuck"})
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 	topping := models.Topping{
 		Title: request.Title,
 		Price: request.Price,
-		Image: filename,
+		Image: resp.SecureURL,
 	}
 
 	topping, err = h.ToppingRepository.CreateTopping(topping)
