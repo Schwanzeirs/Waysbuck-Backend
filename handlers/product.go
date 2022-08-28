@@ -19,7 +19,7 @@ type handlerProduct struct {
 }
 
 // Create `path_file` Global variable here ...
-var path_file = "http://localhost:5000/uploads/"
+var path_file = "https://ways-app.herokuapp.com/uploads/"
 
 func HandlerProduct(ProductRepository repositories.ProductRepository) *handlerProduct {
 	return &handlerProduct{ProductRepository}
