@@ -5,10 +5,15 @@ import (
 	dto "bewaysbuck/dto/result"
 	"bewaysbuck/models"
 	"bewaysbuck/repositories"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
@@ -18,7 +23,7 @@ type handlerProfile struct {
 	ProfileRepository repositories.ProfileRepository
 }
 
-var profileimage = "http://localhost:5000/uploads/"
+// var profileimage = "http://localhost:5000/uploads/"
 
 func HandlerProfile(ProfileRepository repositories.ProfileRepository) *handlerProfile {
 	return &handlerProfile{ProfileRepository}
@@ -36,9 +41,9 @@ func (h *handlerProfile) FindProfile(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err.Error())
 	}
 
-	for i, p := range profiles {
-		profiles[i].Image = profileimage + p.Image
-	}
+	// for i, p := range profiles {
+	// 	profiles[i].Image = profileimage + p.Image
+	// }
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: profiles}
@@ -59,7 +64,7 @@ func (h *handlerProfile) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile.Image = profileimage + profile.Image
+	// profile.Image = profileimage + profile.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: profile}
@@ -73,7 +78,7 @@ func (h *handlerProfile) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	userId := int(userInfo["id"].(float64))
 
 	dataContex := r.Context().Value("dataFile")
-	filename := dataContex.(string)
+	filepath := dataContex.(string)
 
 	request := profiledto.ProfileRequest{
 		Phone:   r.FormValue("phone"),
@@ -90,8 +95,24 @@ func (h *handlerProfile) CreateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Declare Context Background, Cloud Name, API Key, API Secret ...
+	var ctx = context.Background()
+	var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+	var API_KEY = os.Getenv("API_KEY")
+	var API_SECRET = os.Getenv("API_SECRET")
+
+	// Add your Cloudinary credentials ...
+	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+
+	// Upload file to Cloudinary ...
+	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "waysbuck"})
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 	profile := models.Profile{
-		Image:   filename,
+		Image:   resp.SecureURL,
 		Phone:   request.Phone,
 		Gender:  request.Gender,
 		Address: request.Address,
