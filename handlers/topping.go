@@ -55,7 +55,7 @@ func (h *handlerTopping) GetTopping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topping.Image = path_file + topping.Image
+	// topping.Image = path_file + topping.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: topping}
