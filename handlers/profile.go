@@ -80,10 +80,13 @@ func (h *handlerProfile) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	dataContex := r.Context().Value("dataFile")
 	filepath := dataContex.(string)
 
+	postcode, _ := strconv.Atoi(r.FormValue("postcode"))
+
 	request := profiledto.ProfileRequest{
-		Phone:   r.FormValue("phone"),
-		Address: r.FormValue("address"),
-		Gender:  r.FormValue("gender"),
+		Phone:    r.FormValue("phone"),
+		Address:  r.FormValue("address"),
+		Gender:   r.FormValue("gender"),
+		Postcode: postcode,
 	}
 
 	validation := validator.New()
@@ -112,11 +115,12 @@ func (h *handlerProfile) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile := models.Profile{
-		Image:   resp.SecureURL,
-		Phone:   request.Phone,
-		Gender:  request.Gender,
-		Address: request.Address,
-		UserID:  userId,
+		Image:    resp.SecureURL,
+		Phone:    request.Phone,
+		Gender:   request.Gender,
+		Address:  request.Address,
+		Postcode: request.Postcode,
+		UserID:   userId,
 	}
 
 	profile, err = h.ProfileRepository.CreateProfile(profile)
